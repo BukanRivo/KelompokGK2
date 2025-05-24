@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Babylon.js Enhanced Box Animation</title>
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+  <style>
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #111; }
+    canvas { width: 100%; height: 100%; display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="renderCanvas"></canvas>
+  <script>
+    const canvas = document.getElementById("renderCanvas");
+    const engine = new BABYLON.Engine(canvas, true);
+
+    const createScene = function () {
+      const scene = new BABYLON.Scene(engine);
+      scene.clearColor = new BABYLON.Color4(0.05, 0.05, 0.05, 1);
+
+      const camera = new BABYLON.ArcRotateCamera("camera1", Math.PI / 4, Math.PI / 3, 8, new BABYLON.Vector3(0, 1, 0), scene);
+      camera.attachControl(canvas, true);
+
+      const light = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-1, -2, -1), scene);
+      light.position = new BABYLON.Vector3(5, 10, 5);
+      light.intensity = 1.2;
+
+      const shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
+      shadowGenerator.useBlurExponentialShadowMap = true;
+      shadowGenerator.blurKernel = 32;
+
+      const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 10, height: 10 }, scene);
+      ground.receiveShadows = true;
+
+      const box = BABYLON.MeshBuilder.CreateBox("box", { size: 1.5 }, scene);
+      box.position.y = 0.75;
+      shadowGenerator.addShadowCaster(box);
+
+      const boxMat = new BABYLON.PBRMetallicRoughnessMaterial("pbr", scene);
+      boxMat.baseColor = new BABYLON.Color3(0.4, 0.6, 1);
+      box.material = boxMat;
+
+      scene.registerBeforeRender(() => {
+        box.rotation.y += 0.01;
+      });
+
+      box.actionManager = new BABYLON.ActionManager(scene);
+
+      box.actionManager.registerAction(
+        new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, () => {
+          boxMat.baseColor = new BABYLON.Color3(Math.random(), Math.random(), Math.random());
+        })
+      );
+
+      box.actionManager.registerAction(
+        new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOverTrigger, () => {
+          box.scaling = new BABYLON.Vector3(1.1, 1.1, 1.1);
+        })
+      );
+      box.actionManager.registerAction(
+        new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOutTrigger, () => {
+          box.scaling = new BABYLON.Vector3(1, 1, 1);
+        })
+      );
+
+      return scene;
+    };
+
+    const scene = createScene();
+
+    engine.runRenderLoop(() => {
+      scene.render();
+    });
+
+    window.addEventListener("resize", () => {
+      engine.resize();
+    });
+  </script>
+</body>
+</html>
